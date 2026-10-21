@@ -14,6 +14,7 @@ final class AppModel: ObservableObject {
     let diagnostics: DiagnosticsStore
     let launchAtLogin: LaunchAtLoginManager
     let inspector: ClickInspector
+    let updates: UpdateManager
 
     private let interceptor: MouseEventInterceptor
     private let quitCoordinator: QuitCoordinator
@@ -29,6 +30,7 @@ final class AppModel: ObservableObject {
         diagnostics = DiagnosticsStore()
         launchAtLogin = LaunchAtLoginManager()
         inspector = ClickInspector()
+        updates = UpdateManager()
         interceptor = MouseEventInterceptor(inspector: inspector)
         quitCoordinator = QuitCoordinator(diagnostics: diagnostics)
         policy = policyStore.policy()
@@ -47,6 +49,7 @@ final class AppModel: ObservableObject {
 
         lifecycle.start()
         permissions.startMonitoring()
+        updates.start()
 
         policyStore.$isEnabled.dropFirst().removeDuplicates()
             .sink { [weak self] _ in DispatchQueue.main.async { self?.reconcile() } }
@@ -63,6 +66,14 @@ final class AppModel: ObservableObject {
 
         reconcile()
     }
+
+    #if DEBUG
+    /// Snapshot rendering only: show a given state without starting anything.
+    func overrideStateForSnapshots(_ state: OperationalState, tap: TapStatus) {
+        self.state = state
+        tapStatus = tap
+    }
+    #endif
 
     func shutdown() {
         interceptor.updateConfiguration { $0.isActive = false }

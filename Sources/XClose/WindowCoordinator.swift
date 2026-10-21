@@ -32,6 +32,7 @@ final class WindowCoordinator: NSObject, NSWindowDelegate {
                 .environmentObject(model.lifecycle)
                 .environmentObject(model.diagnostics)
                 .environmentObject(model.launchAtLogin)
+                .environmentObject(model.updates)
             settingsWindow = makeWindow(title: "XClose Settings", content: view)
         }
         present(settingsWindow)

@@ -82,3 +82,34 @@ To check an app without quitting it, use **Diagnostics › Test**: hover over it
 | 33 | Drag text or windows for a while with XClose Active | Feels the same as with XClose paused. The drag tap is off unless a red × press is armed. | Not yet run |
 
 Record how long detection takes (Diagnostics › Slowest detection) for a typical session. The expected order of magnitude is a few milliseconds.
+
+## Release checklist
+
+Run these against the published DMG before announcing a release. Ideally use a Mac or user account that has never run XClose. **None have been run yet** for 1.0.0.
+
+| # | Check | Expected | Result |
+|---|---|---|---|
+| R1 | Download from the website and open the DMG | The window shows XClose and an Applications shortcut | Not yet run |
+| R2 | Open XClose straight from the DMG | Offers to copy itself to Applications, then relaunches from there | Not yet run |
+| R3 | First launch from Applications | macOS blocks it; **Open Anyway** in Privacy & Security opens it. The onboarding appears. | Not yet run |
+| R4 | Grant Accessibility during onboarding | Status becomes Active with no relaunch, and red × quits an app | Not yet run |
+| R5 | Menu-bar icon and Settings | The star-on-tile icon is visible. Every Settings pane opens. | Not yet run |
+| R6 | Update from the previous version (**Check for Updates…**) | Update window with release notes. Installs, relaunches, and is still **Active** with no new Accessibility prompt. | Not yet run (needs a second release) |
+| R7 | Scheduled update check | Within a day, "Update Available" appears in the menu without a window popping up | Not yet run (needs a second release) |
+| R8 | Turn off automatic update checks, quit, relaunch | The setting stays off | Not yet run |
+| R9 | Website on a phone | Readable, no horizontal scrolling, download link works | Rendered check only (390 pt width, WebKit) |
+
+Checks performed while preparing 1.0.0, on the development Mac (2026-10-21):
+
+| Check | Result |
+|---|---|
+| Two builds signed with the release certificate have different code hashes and the same designated requirement | ✅ Passed |
+| A hardened-runtime build without the library-validation exception crashes at launch: dyld rejects Sparkle ("different Team IDs") | ✅ Observed, which is why `XClose-unsigned.entitlements` exists |
+| With `XClose-unsigned.entitlements`, the app launches and Sparkle.framework is loaded (`vmmap`) | ✅ Passed |
+| The release zip's EdDSA signature is accepted by Sparkle 2.10.0's own `sign_update --verify` | ✅ Passed |
+| CryptoKit and Sparkle key formats are interchangeable, checked in both directions | ✅ Passed |
+| The app inside the mounted DMG passes `codesign --verify --deep --strict` | ✅ Passed |
+| The appcast stays well-formed after inserting an item, and duplicate versions are refused | ✅ Passed (`xmllint`) |
+| The release binary contains no build-machine paths | ✅ Passed |
+| GitHub Actions workflows | ⛔ Not run: they need the repository secrets, then a pushed tag |
+| End-to-end Sparkle update | ⛔ Not run: needs two published releases |

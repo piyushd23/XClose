@@ -25,6 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             exit(0)
         }
         #endif
+        guard InstallLocationGuard.ensureInstalled() else { return }
         // Two interceptors would fight over the same clicks.
         if let id = Bundle.main.bundleIdentifier,
            NSRunningApplication.runningApplications(withBundleIdentifier: id)

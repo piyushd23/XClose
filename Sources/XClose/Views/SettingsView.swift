@@ -132,6 +132,7 @@ struct GeneralSettingsView: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var store: ApplicationPolicyStore
     @EnvironmentObject private var launchAtLogin: LaunchAtLoginManager
+    @EnvironmentObject private var updates: UpdateManager
 
     var body: some View {
         SettingsPane(title: "General") {
@@ -155,6 +156,24 @@ struct GeneralSettingsView: View {
                         Text("Approve XClose in Login Items to finish.").foregroundStyle(.secondary)
                     } trailing: {
                         Button("Open Login Items") { launchAtLogin.openLoginItemsSettings() }
+                    }
+                }
+            }
+            if UpdateManager.isConfigured {
+                Card(title: "Updates",
+                     footer: "XClose checks piyushd23.github.io once a day for a newer version. No personal data is sent, and every update is verified with a signature before it is installed.") {
+                    ToggleRow(title: "Check for updates automatically",
+                              detail: "You'll see “Update Available” in the menu bar menu.",
+                              symbol: "arrow.down.circle.fill", color: .teal,
+                              isOn: Binding(get: { updates.automaticallyChecksForUpdates },
+                                            set: { updates.automaticallyChecksForUpdates = $0 }))
+                    CardDivider()
+                    CardRow {
+                        Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "–")")
+                            .foregroundStyle(.secondary)
+                    } trailing: {
+                        Button("Check Now") { updates.checkForUpdates() }
+                            .disabled(!updates.canCheckForUpdates)
                     }
                 }
             }
@@ -257,7 +276,7 @@ struct AboutSettingsView: View {
             Card(title: "Privacy") {
                 CardRow {
                     RowLabel(title: "Works entirely on your Mac",
-                             detail: "No account, no network access, no analytics.",
+                             detail: "No account and no analytics. The only network use is checking for updates, which you can turn off.",
                              symbol: "lock.fill", color: .blue)
                 }
                 CardDivider()

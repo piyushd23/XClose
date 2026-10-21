@@ -1,34 +1,39 @@
 #!/bin/zsh
-# Builds, Developer ID signs, notarizes and staples dist/XClose.app, then
-# produces dist/XClose-<version>.zip for distribution.
+# Notarizes and staples an app or disk image. Only meaningful for Developer ID
+# signed builds; anything else is skipped with a notice.
 #
-# One-time setup (stores credentials in your login keychain, not in this repo):
-#   xcrun notarytool store-credentials xclose-notary \
-#       --apple-id you@example.com --team-id TEAMID --password <app-specific-password>
+#   scripts/notarize.sh dist/XClose.app
+#   scripts/notarize.sh dist/XClose.dmg
 #
-# Usage:
-#   SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
-#   NOTARY_PROFILE=xclose-notary scripts/notarize.sh
+# Credentials, either:
+#   NOTARY_PROFILE=<name>   from `xcrun notarytool store-credentials` (local use), or
+#   NOTARY_KEY_ID, NOTARY_ISSUER_ID, NOTARY_KEY_FILE   App Store Connect API key (CI)
 set -euo pipefail
 
-ROOT="${0:A:h:h}"
-cd "$ROOT"
-: "${SIGN_IDENTITY:?Set SIGN_IDENTITY to your Developer ID Application identity}"
-: "${NOTARY_PROFILE:?Set NOTARY_PROFILE to a notarytool keychain profile name}"
-[[ "$SIGN_IDENTITY" == Developer\ ID\ Application* ]] || { echo "SIGN_IDENTITY must be a Developer ID Application identity"; exit 1; }
+TARGET="${1:?usage: scripts/notarize.sh <XClose.app | XClose.dmg>}"
+AUTHORITY=$(codesign -dvv "$TARGET" 2>&1 | awk -F= '/^Authority=/ && !seen {print $2; seen = 1}')
+if [[ "$AUTHORITY" != Developer\ ID* ]]; then
+  echo "Skipping notarization: $TARGET is not Developer ID signed (${AUTHORITY:-unsigned})."
+  exit 0
+fi
 
-SIGN_IDENTITY="$SIGN_IDENTITY" scripts/build-app.sh
+if [[ -n "${NOTARY_PROFILE:-}" ]]; then
+  CREDENTIALS=(--keychain-profile "$NOTARY_PROFILE")
+elif [[ -n "${NOTARY_KEY_ID:-}" && -n "${NOTARY_ISSUER_ID:-}" && -n "${NOTARY_KEY_FILE:-}" ]]; then
+  CREDENTIALS=(--key "$NOTARY_KEY_FILE" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID")
+else
+  echo "Set NOTARY_PROFILE, or NOTARY_KEY_ID + NOTARY_ISSUER_ID + NOTARY_KEY_FILE."
+  exit 1
+fi
 
-APP=dist/XClose.app
-VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$APP/Contents/Info.plist")
-SUBMISSION=dist/XClose-notary.zip
+SUBMISSION="$TARGET"
+if [[ "$TARGET" == *.app ]]; then
+  SUBMISSION="$(mktemp -d)/$(basename "$TARGET" .app).zip"
+  ditto -c -k --keepParent "$TARGET" "$SUBMISSION"
+fi
 
-ditto -c -k --keepParent "$APP" "$SUBMISSION"
-xcrun notarytool submit "$SUBMISSION" --keychain-profile "$NOTARY_PROFILE" --wait
-xcrun stapler staple "$APP"
-xcrun stapler validate "$APP"
-spctl --assess --type execute --verbose=4 "$APP"
-
-rm -f "$SUBMISSION"
-ditto -c -k --keepParent "$APP" "dist/XClose-$VERSION.zip"
-echo "==> Ready to distribute: dist/XClose-$VERSION.zip"
+echo "==> Submitting $TARGET for notarization"
+xcrun notarytool submit "$SUBMISSION" "${CREDENTIALS[@]}" --wait
+xcrun stapler staple "$TARGET"
+xcrun stapler validate "$TARGET"
+echo "==> Notarized and stapled $TARGET"

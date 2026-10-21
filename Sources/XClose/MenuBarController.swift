@@ -98,7 +98,17 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         }
 
         menu.addItem(.separator())
+        if let version = model.updates.pendingUpdateVersion {
+            let update = item("Update Available: \(version)…", #selector(checkForUpdates))
+            update.image = NSImage(systemSymbolName: "arrow.down.circle.fill", accessibilityDescription: nil)
+            menu.addItem(update)
+        }
         menu.addItem(item("Settings…", #selector(openSettings), key: ","))
+        if UpdateManager.isConfigured {
+            let check = item("Check for Updates…", #selector(checkForUpdates))
+            check.isEnabled = model.updates.canCheckForUpdates
+            menu.addItem(check)
+        }
         menu.addItem(.separator())
         menu.addItem(item("Quit XClose", #selector(quit), key: "q"))
     }
@@ -113,5 +123,6 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     @objc private func openPermissions() { windows.showSettings(tab: .permissions) }
     @objc private func retry() { model.retryInterception() }
     @objc private func openSettings() { windows.showSettings(tab: .general) }
+    @objc private func checkForUpdates() { model.updates.checkForUpdates() }
     @objc private func quit() { NSApp.terminate(nil) }
 }
