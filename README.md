@@ -1,174 +1,164 @@
 <div align="center">
 
-# ⓧ XClose
+# XClose
 
-### *Click the red × to actually quit the app.*
+**Native window close button enhancement for macOS**
 
-A lightweight macOS menu-bar utility that makes the close button behave the way you always expected.<br>
-Click a window's red **×** and the whole app quits — exactly as if you pressed **⌘Q**.
+A lightweight menu-bar utility that ensures clicking a window's red close button quits the application, matching the behavior of Command-Q.
 
 [![Swift](https://img.shields.io/badge/Swift-5.9+-F05138?style=flat-square&logo=swift&logoColor=white)](https://swift.org)
 [![Platform](https://img.shields.io/badge/macOS-13%2B-000000?style=flat-square&logo=apple&logoColor=white)](https://www.apple.com/macos/)
-[![Architecture](https://img.shields.io/badge/Apple%20Silicon%20%2B%20Intel-Universal-8E8E93?style=flat-square)](https://support.apple.com/en-us/HT211814)
+[![Architecture](https://img.shields.io/badge/Universal-Apple%20Silicon%20%7C%20Intel-8E8E93?style=flat-square)](https://support.apple.com/en-us/HT211814)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-47%20Passing-2EA44F?style=flat-square)]()
+[![Tests](https://img.shields.io/badge/Tests-47%20Passed-2EA44F?style=flat-square)]()
 
 </div>
 
 ---
 
-## The Problem
+## Overview
 
-On macOS, clicking the red **×** button doesn't quit the app — it just closes the window. The app keeps running invisibly in the background, consuming memory and resources. To actually quit, you have to remember **⌘Q** or right-click the Dock icon.
+On macOS, clicking the red close button on a window typically closes only that window while leaving the parent process running in the background. Terminating the application completely requires explicitly pressing **Command-Q** or quitting via the Dock or application menu.
 
-**XClose fixes this.** One click on the red **×** now quits the entire app, naturally.
+**XClose changes this behavior.** Clicking the standard red close button terminates the entire application cleanly.
 
-## ✨ Features
+## Key Features
 
-| | |
+| Capability | Technical Detail |
 |---|---|
-| 🔴 **Click red × → App quits** | All windows close and the app runs its normal quit flow, asking to save unsaved work |
-| ⌥ **Option-click to just close** | Hold Option to close only that window, preserving the original macOS behavior |
-| 🛡️ **Respects save prompts** | XClose never force-quits. If an app has unsaved work, you'll see its save dialog |
-| ⚡ **Instant visual feedback** | With *Hide while quitting*, apps vanish immediately while finishing in the background |
-| 🎯 **Smart detection** | Uses Accessibility APIs — no pixel detection, no injection, no hacks |
-| 🚫 **System apps excluded** | Finder, Dock, and system components are never affected |
-| ⚙️ **Per-app control** | Exclude any app you want from the Settings panel |
-| 🔒 **Privacy-first** | Everything stays on your Mac — no account, no network, no analytics |
+| **Terminate on Close** | Closes all application windows and invokes standard termination lifecycle (`NSRunningApplication.terminate`). |
+| **Option-Click Bypass** | Holding the Option key (`⌥`) preserves standard macOS behavior, closing only the targeted window. |
+| **Safe Exit Lifecycle** | Never sends unhandled POSIX termination signals (`SIGKILL`). Native save prompts and confirmation dialogs remain fully functional. |
+| **Instant Visual Feedback** | Optionally hides the application window immediately while the process completes shutdown in the background. Automatically restores visibility if user attention is required. |
+| **Deterministic Accessibility Hit-Testing** | Validates window roles and close button attributes through macOS Accessibility APIs rather than screen coordinate heuristics or code injection. |
+| **Protected System Processes** | System processes such as Finder, Dock, and core UI components are strictly excluded from interception. |
+| **Configurable Application Rules** | Custom exclusion rules allow specific applications to retain default window management behavior. |
+| **Privacy by Design** | Operates entirely locally. No telemetry, network requests, background daemons, or user tracking. |
 
-## 📦 Installation
+## Installation
 
-### Download
+### Pre-built Binaries
 
-> **Coming soon** — Pre-built, signed and notarized releases will be available on the [Releases](https://github.com/piyushd23/XClose/releases) page.
+Pre-compiled, notarized releases will be made available under [Releases](https://github.com/piyushd23/XClose/releases).
 
-### Build from Source
+### Building from Source
 
-**Requirements:** macOS 13+, Xcode 16+ or Swift 5.9+ Command Line Tools
+**Prerequisites:**
+- macOS 13.0 (Ventura) or later
+- Xcode 16+ or Swift 5.9+ Command Line Tools
 
 ```bash
 # Clone the repository
 git clone https://github.com/piyushd23/XClose.git
 cd XClose
 
-# Run the test suite (47 unit tests)
+# Run test suite
 swift test
 
-# Build the universal app (Apple Silicon + Intel)
+# Build universal binary (arm64 and x86_64)
 scripts/build-app.sh
 
-# Launch
+# Launch application bundle
 open dist/XClose.app
 ```
 
-Or open `XClose.xcodeproj` in Xcode 16+ and run the **XClose** scheme.
+Alternatively, open `XClose.xcodeproj` in Xcode and build using the **XClose** scheme.
 
-### First Launch
+### First Launch Configuration
 
-1. XClose explains what changes
-2. Grant **Accessibility** permission (the only permission needed)
-3. Click **Enable XClose** — you're done!
+1. Launch `XClose.app`.
+2. Grant **Accessibility** access under **System Settings > Privacy & Security > Accessibility** (required for input monitoring and click interception).
+3. Select **Enable XClose**.
 
-The menu-bar icon shows the current state:
-| Icon | State |
-|---|---|
-| **Star on a solid tile** | Active — red × clicks will quit apps |
-| **Same icon, dimmed** | Paused, Starting, Permission required, or Not working (click it for details) |
+The menu bar icon reflects current operational state:
+- **Active:** Interception enabled; standard close button triggers application quit.
+- **Dimmed:** Interception paused, starting up, or pending Accessibility permissions.
 
-## 🏗️ How It Works
+## Architecture
 
-XClose intercepts mouse clicks using a macOS `CGEvent` tap, then uses the Accessibility API to verify whether the click landed on a real window close button. If it did, XClose swallows the click and sends a graceful `terminate()` request to the app — the same mechanism as **⌘Q**.
+XClose uses an event-driven interception architecture combining a low-level `CGEvent` tap with macOS Accessibility APIs:
 
 ```
-Mouse click → Event tap → Accessibility hit test → Is it a real red ×?
-                                                      ├─ Yes → Swallow click, send terminate()
-                                                      └─ No  → Pass through untouched
+Mouse Down -> CGEvent Tap -> Window Server Hit-Test -> Accessibility Validation
+                                                             |
+                                      +----------------------+----------------------+
+                                      |                                             |
+                                  Valid Target                                Invalid / Bypass
+                                      |                                             |
+                              Consume Event                                 Pass Through Event
+                                      |                                             |
+                              Mouse Up Check                                Standard Window Action
+                                      |
+                              Dispatch Quit
+                     (NSRunningApplication.terminate)
 ```
 
-**Key design principles:**
-- **Never force-quits** — uses `NSRunningApplication.terminate()`, so apps can show save dialogs
-- **Never both closes and quits** — the click is either swallowed (and a quit is sent) or passed through (and the app handles it normally)
-- **At most 4 IPC calls** per detection, each capped at 150ms
-- **Yellow, green, ⌘W are never touched**
+1. **Passive Event Tap:** Mouse events are inspected via a `CGEvent` session tap on a dedicated high-priority thread.
+2. **Hit-Testing:** The window server identifies the targeted window and process ID without requiring screen capture permissions.
+3. **Accessibility Verification:** Queries the hit element's role (`AXButton`), subrole (`AXCloseButton`), and window ownership. Tab close buttons and non-standard controls are disregarded.
+4. **Clean Quit Dispatch:** Sends a termination request through `NSRunningApplication.terminate()`. The process handles its own cleanup and document persistence.
 
-For the full technical deep dive, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Refer to [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full architectural documentation.
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 XClose/
 ├── Sources/
-│   ├── XCloseCore/           # Pure logic — policy, click rules, sequencing (unit tested)
+│   ├── XCloseCore/             # Platform-independent logic (policy, state, sequence tracking)
 │   │   ├── AppIdentity.swift
 │   │   ├── ApplicationPolicy.swift
 │   │   ├── ClickRules.swift
 │   │   ├── ClickSequenceTracker.swift
 │   │   ├── OperationalState.swift
 │   │   └── QuitRequestTracker.swift
-│   └── XClose/               # App — event tap, Accessibility, UI
+│   └── XClose/                 # macOS application target (AppKit, CGEvent tap, SwiftUI views)
 │       ├── XCloseApp.swift
 │       ├── MouseEventInterceptor.swift
 │       ├── AccessibilityService.swift
 │       ├── QuitCoordinator.swift
 │       ├── MenuBarController.swift
 │       └── Views/
-├── Tests/XCloseCoreTests/    # Swift Testing suites (47 tests)
-├── Resources/                # Info.plist, entitlements, icons
-├── scripts/                  # build-app.sh, notarize.sh, make-icon.swift
-├── docs/                     # Architecture, testing, distribution
-└── Package.swift             # Swift Package Manager manifest
+├── Tests/XCloseCoreTests/      # Unit tests for core business logic
+├── Resources/                  # Plist manifests, entitlements, and asset catalogs
+├── scripts/                    # Build, icon generation, and notarization scripts
+├── docs/                       # Architecture, testing, and distribution specifications
+└── Package.swift               # Swift package manifest
 ```
 
-## 🧪 Testing
+## Testing and Verification
+
+Run the test suite via the command line:
 
 ```bash
-swift test    # Runs all 47 unit tests
+swift test
 ```
 
 The test suite covers:
-- **Click validation** — button roles, subroles, ownership, geometry
-- **Click sequencing** — press/release tracking, drag cancellation, double-click dedup
-- **Quit requests** — timing, confirmation, cancellation, pid reuse protection
-- **Operational state** — permission, pause, tap health state machine
-- **Application policy** — exclusion rules, protected apps
+- Close button role, subrole, and ownership verification
+- Event sequence transitions (press, drag-to-cancel, release)
+- Duplicate request debouncing and process ID validation
+- State machine transitions across permission changes and pause states
 
-See [TESTING.md](docs/TESTING.md) for the full automated results and the manual compatibility matrix.
+Detailed verification procedures and manual test matrices are documented in [docs/TESTING.md](docs/TESTING.md).
 
-## 📖 Documentation
+## Documentation
 
-| Document | Description |
-|---|---|
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Interception pipeline, ownership model, failure handling |
-| [TESTING.md](docs/TESTING.md) | Automated test results and manual compatibility matrix |
-| [DISTRIBUTION.md](docs/DISTRIBUTION.md) | Signing, notarization, installation, and uninstallation |
+- [Architecture & Design Details](docs/ARCHITECTURE.md)
+- [Testing Matrix & Verification Guide](docs/TESTING.md)
+- [Code Signing, Notarization & Distribution](docs/DISTRIBUTION.md)
 
-## ⚠️ Known Limitations
+## Known Limitations
 
-- **Custom window controls** — Frameless apps with HTML-drawn buttons keep their normal behavior
-- **Panels & dialogs** — Red × on Inspector or Settings panels only closes that window (by design)
-- **No pressed state** — The red × doesn't show its pressed look since XClose swallows the click
-- **Unresponsive apps** — Clicks pass through after ~400ms, with a 5s penalty cooldown
-- **Synthetic clicks** — Clicks from other automation tools pass through untouched
+- **Custom Controls:** Windows with non-native, HTML-rendered, or custom-drawn title bars without standard accessibility semantics are bypassed.
+- **Inspectors and Dialogs:** Utility panels, sheets, and modal dialogues retain their standard window-dismissal behavior.
+- **Button Visual State:** Because the initial mouse event is consumed to prevent duplicate actions, the button's depressed visual state is not displayed.
+- **Unresponsive Processes:** Target processes that do not answer Accessibility queries within 400ms are bypassed and given a cooldown period.
 
-## 🤝 Contributing
+## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Please review [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on code standards, pull requests, and the testing workflow.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Run the tests (`swift test`)
-4. Commit your changes (`git commit -m 'Add amazing feature'`)
-5. Push to the branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
+## License
 
-## 📄 License
-
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
----
-
-<div align="center">
-
-**Made with ❤️ for macOS users who just want the red × to work.**
-
-</div>
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
