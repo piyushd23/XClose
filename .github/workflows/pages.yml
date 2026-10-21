@@ -5,9 +5,8 @@ name: Website
 on:
   push:
     branches: [main]
-    paths: ["site/**"]
+    paths: ["site/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
-  workflow_call:
 
 permissions:
   contents: read
@@ -26,9 +25,6 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v5
-        with:
-          # When called from a release, the new appcast entry is on main, not the tag.
-          ref: main
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
