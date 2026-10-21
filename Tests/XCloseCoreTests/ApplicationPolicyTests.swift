@@ -23,8 +23,8 @@ struct ApplicationPolicyTests {
     }
 
     @Test func xcloseItselfIsExcludedByBundleIDAndPID() {
-        let policy = ApplicationPolicy(ownBundleID: "app.xclose.XClose", ownPID: 42)
-        #expect(policy.eligibility(of: app("app.xclose.xclose", pid: 7)) == .ineligible(.selfApp))
+        let policy = ApplicationPolicy(ownBundleID: "io.github.piyushd23.XClose", ownPID: 42)
+        #expect(policy.eligibility(of: app("io.github.piyushd23.xclose", pid: 7)) == .ineligible(.selfApp))
         #expect(policy.eligibility(of: app("com.other", pid: 42)) == .ineligible(.selfApp))
     }
 

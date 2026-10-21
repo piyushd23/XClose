@@ -1,0 +1,113 @@
+name: Release
+
+# Push a tag like v1.0.0 (matching Resources/Info.plist) to publish a release.
+# Required secrets:
+#   SPARKLE_PRIVATE_KEY    contents of ~/.xclose-release/sparkle_ed25519.key
+#   SIGNING_P12_BASE64     base64 of the signing .p12 (self-signed now, Developer ID later)
+#   SIGNING_P12_PASSWORD   its password
+# Optional, once you have a Developer ID (enables notarization):
+#   NOTARY_KEY_ID, NOTARY_ISSUER_ID, NOTARY_KEY_P8_BASE64   App Store Connect API key
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check tag matches app version
+        run: |
+          VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
+          if [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match Info.plist version $VERSION (run scripts/set-version.sh)"
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Unit tests
+        run: swift test
+
+      - name: Prepare signing material
+        env:
+          SIGNING_P12_BASE64: ${{ secrets.SIGNING_P12_BASE64 }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          NOTARY_KEY_P8_BASE64: ${{ secrets.NOTARY_KEY_P8_BASE64 }}
+        run: |
+          KEYS="$RUNNER_TEMP/keys"
+          mkdir -p "$KEYS" && chmod 700 "$KEYS"
+          if [ -z "$SPARKLE_PRIVATE_KEY" ]; then
+            echo "::error::SPARKLE_PRIVATE_KEY secret is missing; updates could not be verified"
+            exit 1
+          fi
+          printf '%s' "$SPARKLE_PRIVATE_KEY" > "$KEYS/sparkle_ed25519.key"
+          echo "SPARKLE_KEY_FILE=$KEYS/sparkle_ed25519.key" >> "$GITHUB_ENV"
+          if [ -n "$SIGNING_P12_BASE64" ]; then
+            printf '%s' "$SIGNING_P12_BASE64" | base64 --decode > "$KEYS/signing.p12"
+            echo "SIGNING_P12=$KEYS/signing.p12" >> "$GITHUB_ENV"
+          else
+            echo "::error::SIGNING_P12_BASE64 secret is missing; an ad-hoc build would make users re-grant Accessibility after every update"
+            exit 1
+          fi
+          if [ -n "$NOTARY_KEY_P8_BASE64" ]; then
+            printf '%s' "$NOTARY_KEY_P8_BASE64" | base64 --decode > "$KEYS/notary.p8"
+            echo "NOTARY_KEY_FILE=$KEYS/notary.p8" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build
+        env:
+          SIGNING_P12_PASSWORD: ${{ secrets.SIGNING_P12_PASSWORD }}
+        run: scripts/build-app.sh
+
+      - name: Notarize app (Developer ID only)
+        env:
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+        run: |
+          if [ -n "$NOTARY_KEY_ID" ]; then scripts/notarize.sh dist/XClose.app; else echo "No notary credentials; skipping."; fi
+
+      - name: Package
+        run: scripts/package-release.sh
+
+      - name: Notarize disk image (Developer ID only)
+        env:
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+        run: |
+          if [ -n "$NOTARY_KEY_ID" ]; then scripts/notarize.sh dist/XClose.dmg; else echo "No notary credentials; skipping."; fi
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/XClose.dmg "dist/XClose-$VERSION.zip" \
+            --title "XClose $VERSION" --notes-file dist/release-notes.md
+
+      - name: Add release to the update feed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout main
+          git pull --ff-only origin main
+          python3 -I scripts/update-appcast.py dist/appcast-item.xml site/appcast.xml
+          git add site/appcast.xml
+          git commit -m "Appcast: XClose $VERSION"
+          git push origin main
+
+  website:
+    needs: release
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Used only for builds without an Apple Developer ID (self-signed or ad-hoc).
+	     Hardened runtime library validation accepts only frameworks signed with the
+	     app's Apple Team ID; a self-signed certificate has none, so the embedded
+	     Sparkle.framework (signed with the same certificate) would be rejected.
+	     Developer ID builds use XClose.entitlements and keep library validation on. -->
+	<key>com.apple.security.app-sandbox</key>
+	<false/>
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+</dict>
+</plist>

@@ -9,6 +9,8 @@ enum Snapshotter {
     static func run(into directory: URL) {
         let model = AppModel()
         model.lifecycle.start()
+        model.policyStore.isEnabled = true
+        model.overrideStateForSnapshots(.operational, tap: .running)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
         for (appearanceName, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
@@ -34,6 +36,7 @@ enum Snapshotter {
             .environmentObject(model.lifecycle)
             .environmentObject(model.diagnostics)
             .environmentObject(model.launchAtLogin)
+            .environmentObject(model.updates)
         let host = NSHostingView(rootView: root)
         host.appearance = NSAppearance(named: appearance)
         let size = host.fittingSize

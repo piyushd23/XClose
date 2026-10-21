@@ -4,3 +4,9 @@ DerivedData/
 *.xcuserstate
 xcuserdata/
 .DS_Store
+
+# Release secrets must never be committed (they live in ~/.xclose-release and GitHub secrets).
+*.p12
+*.p8
+*.keychain-db
+sparkle_ed25519.key

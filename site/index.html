@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>XClose — Red × means Quit</title>
+  <meta name="description" content="XClose is a tiny macOS menu-bar utility: click any window's red close button and the whole app quits, just like ⌘Q. Free and open source.">
+  <meta property="og:title" content="XClose — Red × means Quit">
+  <meta property="og:description" content="Click any window's red × and the whole app quits, just like ⌘Q. Free, open source, for macOS 13+.">
+  <meta property="og:image" content="https://piyushd23.github.io/XClose/assets/screenshot-general.png">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#0b0b0d">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <style>
+    :root {
+      --ink: #0b0b0d;
+      --panel: #141417;
+      --panel-2: #1b1b1f;
+      --line: rgba(255, 255, 255, 0.08);
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --lime: #dbfa3d;
+      --lime-ink: #0b0b0d;
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--ink);
+      color: var(--text);
+      font: 17px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+    /* Navigation */
+    nav { position: sticky; top: 0; z-index: 10; background: rgba(11, 11, 13, 0.8); backdrop-filter: saturate(160%) blur(16px); -webkit-backdrop-filter: saturate(160%) blur(16px); border-bottom: 1px solid var(--line); }
+    nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; letter-spacing: -0.01em; }
+    .brand img { width: 28px; height: 28px; }
+    .links { display: flex; gap: 26px; font-size: 15px; }
+    .links a { color: var(--muted); text-decoration: none; }
+    .links a:hover { color: var(--text); }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 24px; border-radius: 999px; font-weight: 600; text-decoration: none; font-size: 16px; transition: transform .15s ease, box-shadow .15s ease, background .15s ease; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--lime); color: var(--lime-ink); box-shadow: 0 8px 30px rgba(219, 250, 61, 0.25); }
+    .btn-primary:hover { box-shadow: 0 10px 40px rgba(219, 250, 61, 0.35); }
+    .btn-ghost { border: 1px solid var(--line); background: var(--panel); }
+    .btn-ghost:hover { background: var(--panel-2); }
+    .btn svg { width: 18px; height: 18px; }
+
+    /* Hero */
+    .hero { text-align: center; padding: 90px 0 40px; position: relative; overflow: hidden; }
+    .hero::before { content: ""; position: absolute; inset: -40% -20% auto; height: 620px; background: radial-gradient(closest-side, rgba(219, 250, 61, 0.14), transparent 70%); pointer-events: none; }
+    .hero .icon { width: 112px; height: 112px; filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.6)); }
+    h1 { font-size: clamp(44px, 7vw, 76px); line-height: 1.02; letter-spacing: -0.035em; margin: 26px 0 18px; font-weight: 800; }
+    h1 .accent { color: var(--lime); }
+    .lede { font-size: clamp(18px, 2.2vw, 21px); color: var(--muted); max-width: 640px; margin: 0 auto 34px; }
+    .cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .meta { margin-top: 18px; font-size: 14px; color: var(--muted); }
+
+    /* Screenshot frame */
+    .shot { margin: 56px auto 0; max-width: 900px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 40px 120px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0,0,0,.6); position: relative; background: #262628; }
+    .shot img { display: block; width: 100%; height: auto; }
+    .shot .lights { position: absolute; top: 14px; left: 14px; display: flex; gap: 8px; }
+    .shot .lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+    .lights i:nth-child(1) { background: #ff5f57; } .lights i:nth-child(2) { background: #febc2e; } .lights i:nth-child(3) { background: #28c840; }
+
+    /* Sections */
+    section { padding: 100px 0 0; }
+    .eyebrow { color: var(--lime); font-weight: 600; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; }
+    h2 { font-size: clamp(32px, 4.4vw, 46px); letter-spacing: -0.03em; line-height: 1.1; margin: 10px 0 14px; }
+    .sub { color: var(--muted); max-width: 640px; margin: 0 0 40px; }
+
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; }
+    .card h3 { margin: 16px 0 6px; font-size: 18px; letter-spacing: -0.01em; }
+    .card p { margin: 0; color: var(--muted); font-size: 15.5px; }
+    .tile { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; font-size: 20px; font-weight: 700; }
+    .t-red { background: linear-gradient(#ff6b5f, #e0362c); } .t-blue { background: linear-gradient(#4aa3ff, #1f6fe0); }
+    .t-green { background: linear-gradient(#5fd97a, #2fb350); } .t-orange { background: linear-gradient(#ffb547, #f08a12); }
+    .t-indigo { background: linear-gradient(#8d84ff, #5b4ee6); } .t-gray { background: linear-gradient(#8e8e93, #5d5d63); }
+    .t-lime { background: var(--lime); color: var(--lime-ink); }
+
+    /* Install steps */
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; counter-reset: step; }
+    .step { position: relative; padding-top: 58px; }
+    .step::before { counter-increment: step; content: counter(step); position: absolute; top: 22px; left: 26px; width: 26px; height: 26px; border-radius: 50%; background: var(--lime); color: var(--lime-ink); font-weight: 800; font-size: 14px; display: grid; place-items: center; }
+    .step h3 { margin-top: 0; }
+    kbd, code { font: 600 14px/1 ui-monospace, "SF Mono", Menlo, monospace; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; color: var(--text); }
+    .note { margin-top: 16px; background: linear-gradient(180deg, rgba(219,250,61,.07), rgba(219,250,61,.02)); border: 1px solid rgba(219, 250, 61, 0.22); border-radius: var(--radius); padding: 22px 26px; color: var(--muted); font-size: 15.5px; }
+    .note strong { color: var(--text); }
+    .note pre { margin: 12px 0 0; overflow-x: auto; }
+    .note pre code { display: inline-block; white-space: pre-wrap; word-break: break-all; line-height: 1.5; }
+
+    /* Gallery */
+    .gallery { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; align-items: start; }
+    .gallery .shot { margin: 0; max-width: none; box-shadow: 0 24px 70px rgba(0,0,0,.55); }
+    .gallery .stack { display: grid; gap: 16px; }
+
+    /* FAQ */
+    details { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 22px; margin-bottom: 10px; }
+    summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "+"; color: var(--muted); font-weight: 400; font-size: 22px; line-height: 1; }
+    details[open] summary::after { content: "–"; }
+    details p { color: var(--muted); margin: 12px 0 0; font-size: 15.5px; }
+
+    /* Final CTA + footer */
+    .final { text-align: center; padding: 110px 0 100px; }
+    .final img { width: 72px; height: 72px; }
+    footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+    footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 28px 24px; }
+    footer a { color: var(--muted); text-decoration: none; margin-left: 20px; }
+    footer a:hover { color: var(--text); }
+
+    @media (max-width: 860px) {
+      .grid, .steps { grid-template-columns: 1fr 1fr; }
+      .gallery { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .wrap { padding: 0 16px; }
+      .links a:not(.gh) { display: none; }
+      .grid, .steps { grid-template-columns: 1fr; }
+      .hero { padding-top: 56px; }
+      section { padding-top: 72px; }
+      .btn { width: 100%; justify-content: center; }
+      footer a { margin: 0 16px 0 0; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="wrap">
+      <a class="brand" href="#"><img src="assets/icon-512.png" alt="">XClose</a>
+      <div class="links">
+        <a href="#features">Features</a>
+        <a href="#install">Install</a>
+        <a href="#faq">FAQ</a>
+        <a class="gh" href="https://github.com/piyushd23/XClose">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="wrap">
+      <img class="icon" src="assets/icon-512.png" alt="XClose app icon">
+      <h1>Red × means <span class="accent">Quit</span>.</h1>
+      <p class="lede">XClose is a tiny menu-bar utility for macOS. Click any window's red close button and the whole app quits — exactly like pressing ⌘Q.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/piyushd23/XClose/releases/latest/download/XClose.dmg">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12m0 0 5-5m-5 5-5-5M5 20h14"/></svg>
+          Download for macOS
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/piyushd23/XClose">View source on GitHub</a>
+      </div>
+      <p class="meta">Free &amp; open source · macOS 13 Ventura or later · Apple Silicon &amp; Intel</p>
+      <div class="shot">
+        <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+        <img src="assets/screenshot-general.png" width="1560" height="1120" alt="XClose settings showing that it is active and that the red × quits the whole app">
+      </div>
+    </div>
+  </header>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="eyebrow">Features</div>
+      <h2>Close means done.</h2>
+      <p class="sub">On a Mac, closing the last window usually leaves the app running. XClose makes the red × do what you meant, and stays out of the way.</p>
+      <div class="grid">
+        <div class="card"><div class="tile t-red">×</div><h3>Quits the whole app</h3><p>All of its windows close, even ones in the background. It's the same request as Quit, sent to the app you clicked.</p></div>
+        <div class="card"><div class="tile t-blue">⌥</div><h3>Option-click to close a window</h3><p>Hold Option while clicking red × for the normal close. Minimize, full screen and ⌘W are untouched.</p></div>
+        <div class="card"><div class="tile t-green">✓</div><h3>Never loses your work</h3><p>Apps still ask to save, and Cancel keeps them running. XClose never force-quits or clicks through dialogs.</p></div>
+        <div class="card"><div class="tile t-orange">⚡</div><h3>Feels instant</h3><p>Windows vanish the moment you click while the app finishes quitting in the background. It comes back if it needs you.</p></div>
+        <div class="card"><div class="tile t-indigo">⊘</div><h3>Exclude any app</h3><p>Keep the old behavior where you want it. Finder and system components are always excluded.</p></div>
+        <div class="card"><div class="tile t-lime">✦</div><h3>Light and private</h3><p>No account, no analytics, about 0% CPU at rest. The only network use is an optional daily update check.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="wrap">
+      <div class="eyebrow">Install</div>
+      <h2>Up and running in a minute.</h2>
+      <p class="sub">XClose updates itself after the first install.</p>
+      <div class="steps">
+        <div class="card step"><h3>Download and drag</h3><p>Open <code>XClose.dmg</code> and drag XClose into your Applications folder.</p></div>
+        <div class="card step"><h3>Open it once</h3><p>The first time, macOS may say it can't verify the developer. Open <strong>System Settings › Privacy &amp; Security</strong>, scroll down and click <strong>Open Anyway</strong>.</p></div>
+        <div class="card step"><h3>Allow Accessibility</h3><p>XClose guides you to turn it on in <strong>Privacy &amp; Security › Accessibility</strong>. That's the only permission it needs.</p></div>
+      </div>
+      <div class="note">
+        <strong>Why does macOS warn me?</strong> XClose isn't notarized by Apple yet, which requires a paid Apple Developer membership. The app is open source and every release is built in public on GitHub Actions. If you prefer the terminal, this removes the download flag after you've copied XClose to Applications:
+        <pre><code>xattr -dr com.apple.quarantine /Applications/XClose.app</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="eyebrow">A closer look</div>
+      <h2>Native, simple, out of your way.</h2>
+      <p class="sub">XClose lives in the menu bar. Pause it in one click, exclude apps, and check exactly what it does in Diagnostics.</p>
+      <div class="gallery">
+        <div class="shot"><div class="lights" aria-hidden="true"><i></i><i></i><i></i></div><img src="assets/screenshot-applications.png" width="1560" height="1120" alt="Applications settings with a list of running apps that can be excluded" loading="lazy"></div>
+        <div class="stack">
+          <div class="shot"><div class="lights" aria-hidden="true"><i></i><i></i><i></i></div><img src="assets/screenshot-welcome.png" width="1200" height="1080" alt="Welcome screen explaining what XClose changes" loading="lazy"></div>
+          <div class="shot"><div class="lights" aria-hidden="true"><i></i><i></i><i></i></div><img src="assets/screenshot-permission.png" width="1200" height="1080" alt="Onboarding step asking for Accessibility access" loading="lazy"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <div class="eyebrow">FAQ</div>
+      <h2>Questions, answered.</h2>
+      <details><summary>Will I lose unsaved work?</summary><p>No. XClose sends the same quit request as ⌘Q. Apps show their usual "Save changes?" prompt, and if you click Cancel the app keeps running.</p></details>
+      <details><summary>Which apps does it work with?</summary><p>Any app with standard macOS window controls: AppKit, SwiftUI, Catalyst, Electron (VS Code, Slack, Discord), Chrome, Safari, Java apps and more. Apps that draw their own window buttons keep their normal behavior. Panels, dialogs and sheets only close, as before.</p></details>
+      <details><summary>Why does it need Accessibility access?</summary><p>To recognize a window's real close button under your click and to stop that one click from just closing the window. XClose only looks at the button you click in a title bar. It never reads window contents, titles or keystrokes.</p></details>
+      <details><summary>Does it collect any data?</summary><p>No. There's no account and no analytics. If automatic updates are on, XClose fetches a small update feed from this site once a day. No personal information is sent, and you can turn it off in Settings.</p></details>
+      <details><summary>How do I pause it or quit it?</summary><p>Click the XClose icon in the menu bar and choose Pause or Quit. Normal red × behavior returns immediately.</p></details>
+      <details><summary>How do I uninstall it?</summary><p>Quit XClose from its menu, then drag it from Applications to the Trash. Optionally remove it from System Settings › Privacy &amp; Security › Accessibility. It installs nothing else.</p></details>
+    </div>
+  </section>
+
+  <div class="final">
+    <div class="wrap">
+      <img src="assets/icon-512.png" alt="">
+      <h2>Make red × mean Quit.</h2>
+      <p class="sub" style="margin: 0 auto 30px;">Free for macOS 13 and later.</p>
+      <a class="btn btn-primary" href="https://github.com/piyushd23/XClose/releases/latest/download/XClose.dmg">Download XClose</a>
+    </div>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <span>© 2026 Piyush Deshmukh · MIT License</span>
+      <span>
+        <a href="https://github.com/piyushd23/XClose/releases">Releases</a>
+        <a href="https://github.com/piyushd23/XClose/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/piyushd23/XClose/issues">Report an issue</a>
+      </span>
+    </div>
+  </footer>
+</body>
+</html>

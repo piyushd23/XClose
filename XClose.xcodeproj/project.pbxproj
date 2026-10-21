@@ -10,6 +10,7 @@
 		A10000000000000000000001 /* XCloseCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* XCloseCore.framework */; };
 		A10000000000000000000002 /* XCloseCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* XCloseCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A10000000000000000000003 /* XCloseCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* XCloseCore.framework */; };
+		A10000000000000000000004 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = AE0000000000000000000001 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -64,6 +65,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000001 /* XCloseCore.framework in Frameworks */,
+				A10000000000000000000004 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -138,6 +140,9 @@
 				A50000000000000000000004 /* Bundle */,
 			);
 			name = XClose;
+			packageProductDependencies = (
+				AE0000000000000000000001 /* Sparkle */,
+			);
 			productName = XClose;
 			productReference = A20000000000000000000001 /* XClose.app */;
 			productType = "com.apple.product-type.application";
@@ -211,6 +216,9 @@
 			);
 			mainGroup = A80000000000000000000001;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				AF0000000000000000000001 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A80000000000000000000002 /* Products */;
 			projectDirPath = "";
@@ -318,7 +326,7 @@
 		AD0000000000000000000011 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = Resources/XClose.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Resources/XClose-unsigned.entitlements";
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -331,7 +339,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.xclose.XClose;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.piyushd23.XClose;
 				PRODUCT_NAME = XClose;
 			};
 			name = Debug;
@@ -353,7 +361,7 @@
 				);
 				MARKETING_VERSION = 1.0.0;
 				OTHER_CODE_SIGN_FLAGS = "--timestamp";
-				PRODUCT_BUNDLE_IDENTIFIER = app.xclose.XClose;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.piyushd23.XClose;
 				PRODUCT_NAME = XClose;
 			};
 			name = Release;
@@ -374,7 +382,7 @@
 					"@executable_path/../Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = app.xclose.XCloseCore;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.piyushd23.XCloseCore;
 				PRODUCT_NAME = XCloseCore;
 				SKIP_INSTALL = YES;
 			};
@@ -396,7 +404,7 @@
 					"@executable_path/../Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = app.xclose.XCloseCore;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.piyushd23.XCloseCore;
 				PRODUCT_NAME = XCloseCore;
 				SKIP_INSTALL = YES;
 			};
@@ -412,7 +420,7 @@
 					"$(inherited)",
 					"@loader_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = app.xclose.XCloseCoreTests;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.piyushd23.XCloseCoreTests;
 				PRODUCT_NAME = XCloseCoreTests;
 			};
 			name = Debug;
@@ -427,7 +435,7 @@
 					"$(inherited)",
 					"@loader_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = app.xclose.XCloseCoreTests;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.piyushd23.XCloseCoreTests;
 				PRODUCT_NAME = XCloseCoreTests;
 			};
 			name = Release;
@@ -472,6 +480,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AF0000000000000000000001 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AE0000000000000000000001 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AF0000000000000000000001 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A90000000000000000000001 /* Project object */;
 }

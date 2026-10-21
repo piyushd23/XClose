@@ -33,13 +33,20 @@ On macOS, clicking the red close button on a window typically closes only that w
 | **Deterministic Accessibility Hit-Testing** | Validates window roles and close button attributes through macOS Accessibility APIs rather than screen coordinate heuristics or code injection. |
 | **Protected System Processes** | System processes such as Finder, Dock, and core UI components are strictly excluded from interception. |
 | **Configurable Application Rules** | Custom exclusion rules allow specific applications to retain default window management behavior. |
-| **Privacy by Design** | Operates entirely locally. No telemetry, network requests, background daemons, or user tracking. |
+| **Automatic Updates** | Sparkle 2 delivers EdDSA-signed updates from GitHub Releases; every update is verified before installation. |
+| **Privacy by Design** | Operates locally. No telemetry, accounts, background daemons, or user tracking. The only network request is an optional daily update check. |
 
 ## Installation
 
-### Pre-built Binaries
+### Download
 
-Pre-compiled, notarized releases will be made available under [Releases](https://github.com/piyushd23/XClose/releases).
+**[Download XClose.dmg](https://github.com/piyushd23/XClose/releases/latest/download/XClose.dmg)** · [Website](https://piyushd23.github.io/XClose/) · [All releases](https://github.com/piyushd23/XClose/releases)
+
+1. Open `XClose.dmg` and drag **XClose** into **Applications**.
+2. Open XClose. Releases are not yet notarized by Apple, so on first launch macOS reports that it cannot verify the developer. Open **System Settings > Privacy & Security**, scroll to the message about XClose, and select **Open Anyway**.
+3. Follow the onboarding to grant **Accessibility** access.
+
+XClose then keeps itself up to date. Releases are signed with a stable project certificate, so the Accessibility grant persists across updates.
 
 ### Building from Source
 
@@ -67,7 +74,7 @@ Alternatively, open `XClose.xcodeproj` in Xcode and build using the **XClose** s
 ### First Launch Configuration
 
 1. Launch `XClose.app`.
-2. Grant **Accessibility** access under **System Settings > Privacy & Security > Accessibility** (required for input monitoring and click interception).
+2. Grant **Accessibility** access under **System Settings > Privacy & Security > Accessibility** (required to identify window close buttons and intercept the click). No other permission is requested.
 3. Select **Enable XClose**.
 
 The menu bar icon reflects current operational state:
@@ -93,7 +100,7 @@ Mouse Down -> CGEvent Tap -> Window Server Hit-Test -> Accessibility Validation
                      (NSRunningApplication.terminate)
 ```
 
-1. **Passive Event Tap:** Mouse events are inspected via a `CGEvent` session tap on a dedicated high-priority thread.
+1. **Session Event Tap:** Left mouse-down and mouse-up events are inspected via an active `CGEvent` session tap on a dedicated high-priority thread; drag events are only observed while a close-button press is in progress.
 2. **Hit-Testing:** The window server identifies the targeted window and process ID without requiring screen capture permissions.
 3. **Accessibility Verification:** Queries the hit element's role (`AXButton`), subrole (`AXCloseButton`), and window ownership. Tab close buttons and non-standard controls are disregarded.
 4. **Clean Quit Dispatch:** Sends a termination request through `NSRunningApplication.terminate()`. The process handles its own cleanup and document persistence.
@@ -146,7 +153,9 @@ Detailed verification procedures and manual test matrices are documented in [doc
 
 - [Architecture & Design Details](docs/ARCHITECTURE.md)
 - [Testing Matrix & Verification Guide](docs/TESTING.md)
-- [Code Signing, Notarization & Distribution](docs/DISTRIBUTION.md)
+- [Installation, Signing & Distribution](docs/DISTRIBUTION.md)
+- [Release Process](docs/RELEASING.md)
+- [Changelog](CHANGELOG.md)
 
 ## Known Limitations
 
