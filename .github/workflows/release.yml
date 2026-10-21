@@ -54,8 +54,14 @@ jobs:
             echo "::error::Secret SPARKLE_PRIVATE_KEY is empty or missing."; exit 1
           fi
           clean "$SPARKLE_PRIVATE_KEY" > "$KEYS/sparkle_ed25519.key"
-          if ! swift scripts/sparkle-keys.swift public "$KEYS/sparkle_ed25519.key" > "$KEYS/derived.pub" 2>/dev/null; then
-            echo "::error::SPARKLE_PRIVATE_KEY is not a valid key. Paste the contents of ~/.xclose-release/sparkle_ed25519.key."; exit 1
+          # A valid key is 44 base64 characters encoding 32 bytes. Report shape only, never content.
+          CHARS=$(wc -c < "$KEYS/sparkle_ed25519.key" | tr -d ' ')
+          BYTES=$(base64 --decode < "$KEYS/sparkle_ed25519.key" 2>/dev/null | wc -c | tr -d ' ')
+          if [ "$BYTES" != 32 ]; then
+            echo "::error::SPARKLE_PRIVATE_KEY has $CHARS characters decoding to $BYTES bytes; expected 44 characters / 32 bytes. Copy it with: pbcopy < ~/.xclose-release/sparkle_ed25519.key"; exit 1
+          fi
+          if ! swift scripts/sparkle-keys.swift public "$KEYS/sparkle_ed25519.key" > "$KEYS/derived.pub" 2> "$KEYS/tool.err"; then
+            echo "::error::The key check tool failed to run: $(head -c 400 "$KEYS/tool.err" | tr '\n' ' ')"; exit 1
           fi
           EXPECTED=$(/usr/libexec/PlistBuddy -c "Print :SUPublicEDKey" Resources/Info.plist)
           if [ "$(cat "$KEYS/derived.pub")" != "$EXPECTED" ]; then
@@ -67,7 +73,7 @@ jobs:
             echo "::error::Secret SIGNING_P12_BASE64 is empty or missing."; exit 1
           fi
           if ! clean "$SIGNING_P12_BASE64" | base64 --decode > "$KEYS/signing.p12" 2>/dev/null || [ ! -s "$KEYS/signing.p12" ]; then
-            echo "::error::SIGNING_P12_BASE64 is not valid base64. Recreate it with: base64 -i ~/.xclose-release/signing.p12 | pbcopy"; exit 1
+            echo "::error::SIGNING_P12_BASE64 is not valid base64. Copy it with: base64 -i ~/.xclose-release/signing.p12 | pbcopy"; exit 1
           fi
           if [ -z "$SIGNING_P12_PASSWORD" ]; then
             echo "::error::Secret SIGNING_P12_PASSWORD is empty or missing."; exit 1
