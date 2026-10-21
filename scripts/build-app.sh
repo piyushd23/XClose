@@ -59,10 +59,15 @@ rm -f "${thin[@]}"
 # Resolve the signing identity.
 KEYCHAIN_ARGS=()
 TEMP_KEYCHAIN=""
-cleanup() { [[ -n "$TEMP_KEYCHAIN" ]] && security delete-keychain "$TEMP_KEYCHAIN" 2>/dev/null || true; }
+SAVED_SEARCH_LIST=()
+cleanup() {
+  if (( ${#SAVED_SEARCH_LIST} )); then security list-keychains -d user -s "${SAVED_SEARCH_LIST[@]}" || true; fi
+  if [[ -n "$TEMP_KEYCHAIN" ]]; then security delete-keychain "$TEMP_KEYCHAIN" 2>/dev/null || true; fi
+}
 trap cleanup EXIT
 if [[ -n "${SIGN_IDENTITY:-}" ]]; then
   IDENTITY="$SIGN_IDENTITY"
+  SIGN_ID="$SIGN_IDENTITY"
 else
   P12="${SIGNING_P12:-}"
   P12_PASSWORD="${SIGNING_P12_PASSWORD:-}"
@@ -71,24 +76,35 @@ else
     P12_PASSWORD="$(cat "$HOME/.xclose-release/signing.p12.password")"
   fi
   if [[ -n "$P12" ]]; then
-    # A throwaway keychain, never added to the user's search list.
+    # A throwaway keychain. On CI (GitHub Actions), codesign only finds identities
+    # in the search list, so it is added there for the duration of the build and
+    # the list is restored afterwards. Locally the user's search list is untouched.
     TEMP_KEYCHAIN="$ROOT/.build/xclose-signing-$$.keychain-db"
     KEYCHAIN_PASSWORD=$(openssl rand -hex 16)
     security create-keychain -p "$KEYCHAIN_PASSWORD" "$TEMP_KEYCHAIN"
     security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$TEMP_KEYCHAIN"
     security import "$P12" -k "$TEMP_KEYCHAIN" -P "$P12_PASSWORD" -T /usr/bin/codesign >/dev/null
-    security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$TEMP_KEYCHAIN" >/dev/null 2>&1
+    security set-keychain-settings "$TEMP_KEYCHAIN"   # no auto-lock during long builds
+    security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$TEMP_KEYCHAIN" >/dev/null 2>&1
+    if [[ -n "${CI:-}" ]]; then
+      SAVED_SEARCH_LIST=("${(@f)$(security list-keychains -d user | sed -e 's/^ *"//' -e 's/"$//')}")
+      security list-keychains -d user -s "$TEMP_KEYCHAIN" "${SAVED_SEARCH_LIST[@]}"
+    fi
     IDENTITY=$(security find-certificate -a "$TEMP_KEYCHAIN" | awk -F'"' '/"labl"/ && !seen {print $4; seen = 1}')
+    # Sign by SHA-1 fingerprint: unambiguous, and works for untrusted self-signed certificates.
+    SIGN_ID=$(security find-certificate -a -Z "$TEMP_KEYCHAIN" | awk '/^SHA-1 hash:/ && !seen {print $3; seen = 1}')
+    [[ -n "$SIGN_ID" ]] || { echo "error: no certificate found in $P12"; exit 1; }
     KEYCHAIN_ARGS=(--keychain "$TEMP_KEYCHAIN")
   else
     IDENTITY="-"
+    SIGN_ID="-"
     echo "warning: ad-hoc signing; users would have to re-grant Accessibility after each update"
   fi
 fi
 
-echo "==> Signing with: $IDENTITY"
+echo "==> Signing with: $IDENTITY${SIGN_ID:+ ($SIGN_ID)}"
 sign() {
-  local args=(--force --options runtime --sign "$IDENTITY" "${KEYCHAIN_ARGS[@]}")
+  local args=(--force --options runtime --sign "$SIGN_ID" "${KEYCHAIN_ARGS[@]}")
   if [[ "$IDENTITY" == Developer\ ID* ]]; then args+=(--timestamp); fi
   codesign "${args[@]}" "$@"
 }
