@@ -6,5 +6,22 @@
     <description>Updates for XClose</description>
     <language>en</language>
     <!-- items: newest first -->
+    <item>
+      <title>Version 1.0.0</title>
+      <pubDate>Wed, 21 Oct 2026 18:09:08 +0000</pubDate>
+      <sparkle:version>1</sparkle:version>
+      <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<ul>
+<li>First public release.</li>
+<li>Clicking a window's red × quits the whole app, like ⌘Q. Hold ⌥ Option to close just the window.</li>
+<li>Apps hide instantly while they quit and come back if they ask to save.</li>
+<li>Exclude any app; Finder and system components are always excluded.</li>
+<li>Automatic updates.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/piyushd23/XClose/releases/download/v1.0.0/XClose-1.0.0.zip"
+                 length="3050536" type="application/octet-stream"
+                 sparkle:edSignature="eFxeDwbImBPmG1QIk2GSVFw0UOykdPZmKpuja/xnqPlhJXo87LiPwLsn7VOaIC+7+wstJ9SZh6xqWVdcMfGcBg=="/>
+    </item>
   </channel>
 </rss>
