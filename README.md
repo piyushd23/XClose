@@ -72,9 +72,8 @@ Or open `XClose.xcodeproj` in Xcode 16+ and run the **XClose** scheme.
 The menu-bar icon shows the current state:
 | Icon | State |
 |---|---|
-| **Filled ⓧ** | Active — red × clicks will quit apps |
-| **Outlined ⓧ** | Paused or Starting |
-| **⚠︎** | Permission required or Not working |
+| **Star on a solid tile** | Active — red × clicks will quit apps |
+| **Same icon, dimmed** | Paused, Starting, Permission required, or Not working (click it for details) |
 
 ## 🏗️ How It Works
 
