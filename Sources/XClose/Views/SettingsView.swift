@@ -269,9 +269,7 @@ struct PermissionsSettingsView: View {
 struct AboutSettingsView: View {
     private var version: String {
         let info = Bundle.main.infoDictionary
-        let short = info?["CFBundleShortVersionString"] as? String ?? "dev"
-        let build = info?["CFBundleVersion"] as? String ?? "0"
-        return "Version \(short) (\(build))"
+        return "Version \(info?["CFBundleShortVersionString"] as? String ?? "dev")"
     }
 
     var body: some View {

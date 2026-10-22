@@ -3,6 +3,10 @@
 All notable changes to XClose are listed here. Each release's section is
 shown to users in the update window, so write it for them.
 
+## 1.0.2
+
+- Settings › About now shows a clean version number (for example "Version 1.0.2").
+
 ## 1.0.1
 
 - A dot on the menu-bar icon now tells you when an update is ready.
