@@ -168,12 +168,23 @@ struct GeneralSettingsView: View {
                               isOn: Binding(get: { updates.automaticallyChecksForUpdates },
                                             set: { updates.automaticallyChecksForUpdates = $0 }))
                     CardDivider()
-                    CardRow {
-                        Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "–")")
-                            .foregroundStyle(.secondary)
-                    } trailing: {
-                        Button("Check Now") { updates.checkForUpdates() }
-                            .disabled(!updates.canCheckForUpdates)
+                    if let version = updates.pendingUpdateVersion {
+                        CardRow {
+                            RowLabel(title: "Version \(version) is ready to install",
+                                     detail: "See what's new and install in one click.",
+                                     symbol: "sparkles", color: .blue)
+                        } trailing: {
+                            Button("Install…") { updates.checkForUpdates() }
+                                .buttonStyle(.borderedProminent)
+                        }
+                    } else {
+                        CardRow {
+                            Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "–")")
+                                .foregroundStyle(.secondary)
+                        } trailing: {
+                            Button("Check Now") { updates.checkForUpdates() }
+                                .disabled(!updates.canCheckForUpdates)
+                        }
                     }
                 }
             }

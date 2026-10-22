@@ -7,7 +7,20 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     private let model: AppModel
     private let windows: WindowCoordinator
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-    private var cancellable: AnyCancellable?
+    private var cancellables: Set<AnyCancellable> = []
+    /// Accent-colored dot over the icon while an update is waiting. A separate
+    /// view, so the icon itself stays a template image tinted by macOS.
+    private let updateBadge: NSView = {
+        let dot = NSView()
+        dot.wantsLayer = true
+        dot.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
+        dot.layer?.cornerRadius = 3.5
+        dot.layer?.borderWidth = 1
+        dot.layer?.borderColor = NSColor.windowBackgroundColor.cgColor
+        dot.isHidden = true
+        dot.translatesAutoresizingMaskIntoConstraints = false
+        return dot
+    }()
 
     init(model: AppModel, windows: WindowCoordinator) {
         self.model = model
@@ -16,7 +29,20 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         let menu = NSMenu()
         menu.delegate = self
         statusItem.menu = menu
-        cancellable = model.$state.sink { [weak self] state in self?.updateIcon(for: state) }
+        model.$state.sink { [weak self] state in self?.updateIcon(for: state) }.store(in: &cancellables)
+        if let button = statusItem.button {
+            button.addSubview(updateBadge)
+            NSLayoutConstraint.activate([
+                updateBadge.widthAnchor.constraint(equalToConstant: 7),
+                updateBadge.heightAnchor.constraint(equalToConstant: 7),
+                updateBadge.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -1),
+                updateBadge.topAnchor.constraint(equalTo: button.topAnchor, constant: 2),
+            ])
+        }
+        model.updates.$pendingUpdateVersion
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] version in self?.showUpdateBadge(version) }
+            .store(in: &cancellables)
     }
 
     /// The star on a solid tile is the only menu-bar icon. It is a template image,
@@ -35,7 +61,13 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         button?.image?.isTemplate = true
         button?.setAccessibilityLabel("XClose: \(state.title)")
         button?.appearsDisabled = state != .operational
-        button?.toolTip = "XClose — \(state.title)"
+        if model.updates.pendingUpdateVersion == nil { button?.toolTip = "XClose — \(state.title)" }
+    }
+
+    private func showUpdateBadge(_ version: String?) {
+        updateBadge.isHidden = version == nil
+        updateBadge.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
+        statusItem.button?.toolTip = version.map { "XClose — Update \($0) available" } ?? "XClose — \(model.state.title)"
     }
 
     private static func dot(_ color: NSColor) -> NSImage {
