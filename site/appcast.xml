@@ -7,6 +7,21 @@
     <language>en</language>
     <!-- items: newest first -->
     <item>
+      <title>Version 1.0.1</title>
+      <pubDate>Thu, 22 Oct 2026 06:52:07 +0000</pubDate>
+      <sparkle:version>2</sparkle:version>
+      <sparkle:shortVersionString>1.0.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<ul>
+<li>A dot on the menu-bar icon now tells you when an update is ready.</li>
+<li>You get a one-time notification when a new version is available. Click it to see what's new and install.</li>
+<li>Settings › General › Updates shows the waiting version with an <b>Install</b> button.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/piyushd23/XClose/releases/download/v1.0.1/XClose-1.0.1.zip"
+                 length="3061378" type="application/octet-stream"
+                 sparkle:edSignature="NnjmkFapTtG8cIaXr/Bf9mMnVVVVmbD/jw9KRrMtsP9ZZcEYQBfM1ubmLeSQsgMza4KRUw538z9miQadpJp7Bw=="/>
+    </item>
+    <item>
       <title>Version 1.0.0</title>
       <pubDate>Wed, 21 Oct 2026 18:09:08 +0000</pubDate>
       <sparkle:version>1</sparkle:version>
